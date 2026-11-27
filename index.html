@@ -644,32 +644,58 @@ timMenu.addEventListener('click',async event=>{
   const context = canvas.getContext('2d');
   const status = dialog.querySelector('.maze-status');
   const score = dialog.querySelector('output');
-  const map = [
-    '###############',
-    '#P....#.......#',
-    '#.##..#.###.#.#',
-    '#....##.....#.#',
-    '###.#...#.....#',
-    '#...#.#####.###',
-    '#.#...#...#...#',
-    '#.#.###.#.###.#',
-    '#...#...#.....#',
-    '#.###.#.#####.#',
-    '#.....#...#...#',
-    '#.####..#..S#E#',
-    '###############'
-  ];
-  const columns = map[0].length;
-  const tiles = [...map.join('')];
+  const columns = 15;
+  const rows = 13;
   const cellSize = canvas.width / columns;
-  const exit = tiles.indexOf('E');
-  const dots = tiles.flatMap((tile, index) => tile === '.' ? [index] : []);
+  const start = columns + 1;
+  const exit = (rows - 2) * columns + columns - 2;
+  const sentryStart = exit - 2;
   const directions = new Map([
     ['ArrowLeft', -1], ['ArrowUp', -columns], ['ArrowDown', columns], ['ArrowRight', 1],
     ['KeyA', -1], ['KeyW', -columns], ['KeyS', columns], ['KeyD', 1]
   ]);
   const steps = [-1, 1, -columns, columns];
-  let remaining, player, sentry, moves, playing, direction, queued, timer;
+  let tiles, total, remaining, player, sentry, moves, playing, direction, queued, timer;
+
+  function generateMaze() {
+    const layout = Array(rows * columns).fill('#');
+    const trail = [start];
+    layout[start] = '.';
+
+    // Carve one connected network of rooms and passages.
+    while (trail.length) {
+      const room = trail[trail.length - 1];
+      const unvisited = steps.map(step => room + 2 * step).filter(next => {
+        const x = next % columns;
+        const y = Math.floor(next / columns);
+        return x > 0 && x < columns - 1 && y > 0 && y < rows - 1 && layout[next] === '#';
+      });
+      if (!unvisited.length) {
+        trail.pop();
+        continue;
+      }
+      const next = unvisited[Math.floor(Math.random() * unvisited.length)];
+      layout[(room + next) / 2] = '.';
+      layout[next] = '.';
+      trail.push(next);
+    }
+
+    // Always allow two opening moves, then add shortcuts around the corridor loops.
+    layout[start + 1] = layout[start + columns] = '.';
+    const shortcuts = [];
+    for (let y = 1; y < rows - 1; y += 2) {
+      for (let x = 1; x < columns - 1; x += 2) {
+        const room = y * columns + x;
+        if (x + 2 < columns - 1 && layout[room + 1] === '#') shortcuts.push(room + 1);
+        if (y + 2 < rows - 1 && layout[room + columns] === '#') shortcuts.push(room + columns);
+      }
+    }
+    for (let count = 0; count < 12 && shortcuts.length; count++) {
+      const [shortcut] = shortcuts.splice(Math.floor(Math.random() * shortcuts.length), 1);
+      layout[shortcut] = '.';
+    }
+    return layout;
+  }
 
   function box(x, y, width, height, color) {
     context.fillStyle = color;
@@ -706,7 +732,7 @@ timMenu.addEventListener('click',async event=>{
         box(x + 11, y + 11, 2, 2, '#fff3d8');
       }
     });
-    score.textContent = (dots.length - remaining.size) + ' / ' + dots.length;
+    score.textContent = (total - remaining.size) + ' / ' + total;
   }
 
   function stopMoving() {
@@ -716,9 +742,14 @@ timMenu.addEventListener('click',async event=>{
 
   function reset() {
     stopMoving();
-    player = tiles.indexOf('P');
-    sentry = tiles.indexOf('S');
-    remaining = new Set(dots);
+    tiles = generateMaze();
+    player = start;
+    sentry = sentryStart;
+    remaining = new Set(tiles.flatMap((tile, index) => tile === '.' ? [index] : []));
+    remaining.delete(start);
+    remaining.delete(sentryStart);
+    remaining.delete(exit);
+    total = remaining.size;
     moves = 0;
     direction = queued = 0;
     playing = true;
