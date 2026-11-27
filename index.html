@@ -615,15 +615,15 @@ timMenu.addEventListener('click',async event=>{
 </script>
 <dialog class="maze-window" aria-labelledby="maze-title" aria-describedby="maze-status">
  <header class="maze-titlebar">
-  <h2 id="maze-title"><span aria-hidden="true">&gt;_</span> Python · Лабиринт</h2>
+  <h2 id="maze-title"><span aria-hidden="true">&gt;_</span> Python</h2>
   <button type="button" class="maze-close" aria-label="Закрыть">×</button>
  </header>
  <div class="maze-terminal">
   <div class="maze-toolbar">
-   <span>ТОЧКИ <output id="maze-score">0</output></span>
+   <span>Жёлтые штуки <output id="maze-score">0</output></span>
    <button type="button" class="maze-restart">Заново</button>
   </div>
-  <canvas width="360" height="312" aria-label="Поле лабиринта" tabindex="0" autofocus></canvas>
+  <canvas width="360" height="312" aria-label="Игровое поле" tabindex="0" autofocus></canvas>
   <p class="maze-status" id="maze-status" role="status"></p>
   <div class="maze-controls">
    <small>Стрелки / WASD</small>
@@ -722,7 +722,7 @@ timMenu.addEventListener('click',async event=>{
     moves = 0;
     direction = queued = 0;
     playing = true;
-    status.textContent = 'Собери точки, обходи сторожа и доберись до выхода.';
+    status.textContent = 'Собери все штуки и драпаем';
     draw();
   }
 
@@ -759,7 +759,7 @@ timMenu.addEventListener('click',async event=>{
     }
     if (++moves % 4 === 0 && player !== sentry) sentry = chase();
     if (player === sentry || (player === exit && !remaining.size)) {
-      status.textContent = player === sentry ? 'Сторож тебя поймал. Попробуй ещё раз.' : 'Выход найден. Ты прошёл лабиринт!';
+      status.textContent = player === sentry ? 'Сторож тебя поймал. Попробуй ещё раз.' : 'Выход найден. Драпнули!';
       playing = false;
       stopMoving();
     }
